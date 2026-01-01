@@ -168,4 +168,56 @@ async def leaderboard(ctx):
     text = ""
     for i, p in enumerate(sorted_players, 1):
         medal = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else f"#{i}"
-        text += f"{
+        text += f"{medal} **{p['ign']}** — {p['rank']}\n"
+
+    embed.description = text
+    await ctx.send(embed=embed)
+
+# 6. MATCH LOG (Calculates Points)
+@bot.command()
+async def matchlog(ctx, kills: int, place: int, *, map_name: str = "Erangel"):
+    """Log a match result. Usage: !matchlog <kills> <place> <map>"""
+    # BGIS Point System
+    pts_map = {1:10, 2:6, 3:5, 4:4, 5:3, 6:2, 7:1, 8:1}
+    place_pts = pts_map.get(place, 0)
+    total_pts = place_pts + kills
+
+    matches = load_json(MATCH_FILE)
+    if isinstance(matches, dict): matches = [] # Safety fix if file was corrupted
+    
+    new_match = {
+        "date": str(datetime.date.today()),
+        "map": map_name,
+        "kills": kills,
+        "place": place,
+        "total": total_pts
+    }
+    
+    matches.append(new_match)
+    save_json(MATCH_FILE, matches)
+
+    embed = discord.Embed(title=f"📝 Match Recorded: {map_name}", color=discord.Color.green())
+    embed.add_field(name="Kills", value=kills, inline=True)
+    embed.add_field(name="Place", value=f"#{place} ({place_pts} pts)", inline=True)
+    embed.add_field(name="TOTAL", value=f"🔥 {total_pts} Points", inline=False)
+    await ctx.send(embed=embed)
+
+# --- ERROR HANDLING ---
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        # If they forget to type the numbers
+        await ctx.send("❌ **Format Error!** You missed some info.\n"
+                       "Correct usage: `!matchlog <kills> <place> <map>`\n"
+                       "Example: `!matchlog 10 1 Erangel`")
+    elif isinstance(error, commands.BadArgument):
+        # If they type text where a number is needed (e.g., "!matchlog ten 1")
+        await ctx.send("❌ **Type Error!** Please use numbers for Kills and Place.")
+    else:
+        # Print other errors to console so you can see them
+        print(f"Error: {error}")
+
+# --- START BOTH SYSTEMS ---
+if __name__ == '__main__':
+    keep_alive()  # 1. Starts the fake web server first
+    bot.run(TOKEN) # 2. Then starts the bot
