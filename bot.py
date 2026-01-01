@@ -5,7 +5,7 @@ import os
 import datetime
 
 # --- CONFIGURATION ---
-TOKEN = 'PASTE_YOUR_TOKEN_HERE'  # <--- PASTE YOUR TOKEN HERE
+TOKEN = os.environ.get("TOKEN")
 
 # --- FILE NAMES ---
 DB_FILE = 'players.json'
@@ -188,5 +188,6 @@ async def on_command_error(ctx, error):
     else:
         # Print other errors to console so you can see them
         print(f"Error: {error}")
+
 
 bot.run(TOKEN)
